@@ -1,11 +1,11 @@
 const express = require('express');
 const { db } = require('../db/init');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireAdmin } = require('../middleware/auth');
 const router = express.Router();
 
-// GET /api/admin/users  (panel administrativo)
-// [VULN A01:2021 - Broken Access Control] Solo exige requireAuth, NO rol admin.
-router.get('/admin/users', requireAuth, (req, res) => {
+// GET /api/admin/users
+// [FIX A01:2021] Doble control: autenticación + autorización por rol (RBAC).
+router.get('/admin/users', requireAuth, requireAdmin, (req, res) => {
   const users = db.prepare('SELECT id,username,email,role,tax_id FROM users').all();
   res.json({ users });
 });

@@ -1,0 +1,4 @@
+# Fixtures de laboratorio: contienen payloads/secretos intencionales, no vulnerabilidades del producto
+poc/
+src/db/init.js
+node_modules/

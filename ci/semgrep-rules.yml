@@ -1,0 +1,41 @@
+rules:
+  - id: js-sqli-user-input-to-query
+    languages: [javascript]
+    severity: ERROR
+    mode: taint
+    message: "Inyeccion SQL (OWASP A03:2021): entrada de usuario (req.body/params) fluye a una consulta SQL construida por concatenacion. Use consultas parametrizadas (prepared statements con '?')."
+    metadata:
+      owasp: "A03:2021 Injection"
+      cwe: "CWE-89"
+    pattern-sources:
+      - pattern: req.body
+      - pattern: req.params
+      - patterns:
+          - pattern: $X
+          - pattern-inside: "const { $A, ... } = req.body.$Y;"
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $DB.prepare($SQL)
+              - pattern: $DB.exec($SQL)
+          - focus-metavariable: $SQL
+
+  - id: jwt-decode-used-for-auth
+    languages: [javascript]
+    severity: ERROR
+    message: "Autenticacion insegura (OWASP API2:2023): jwt.decode() NO verifica la firma; acepta alg:none y tokens forjados. Use jwt.verify(token, secret, {algorithms:['HS256']})."
+    metadata:
+      owasp: "API2:2023 Broken Authentication"
+      cwe: "CWE-347"
+    pattern: jwt.decode(...)
+
+  - id: jwt-sign-without-expiration
+    languages: [javascript]
+    severity: WARNING
+    message: "Token JWT sin expiracion (OWASP API2:2023): anada {expiresIn:'...'} en jwt.sign()."
+    metadata:
+      owasp: "API2:2023 Broken Authentication"
+      cwe: "CWE-613"
+    patterns:
+      - pattern: jwt.sign($P, $S)
+      - pattern-not: jwt.sign($P, $S, {...})

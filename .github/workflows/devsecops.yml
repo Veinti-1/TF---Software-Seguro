@@ -1,0 +1,38 @@
+name: DevSecOps Pipeline (Quality Gates)
+on:
+  push: { branches: [ main, develop ] }
+  pull_request: { branches: [ main ] }
+permissions: { contents: read, security-events: write }
+jobs:
+  secret-scanning:
+    name: "Gate 1 - Secret Scanning (Gitleaks)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env: { GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false" }
+  sast:
+    name: "Gate 2 - SAST (Semgrep)"
+    runs-on: ubuntu-latest
+    container: { image: semgrep/semgrep }
+    steps:
+      - uses: actions/checkout@v4
+      - run: semgrep scan --config ci/semgrep-rules.yml --config p/owasp-top-ten --error
+  sca:
+    name: "Gate 3 - SCA (Trivy HIGH/CRITICAL)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aquasecurity/trivy-action@0.24.0
+        with: { scan-type: fs, scan-ref: '.', severity: 'HIGH,CRITICAL', exit-code: '1', ignore-unfixed: true }
+  build:
+    name: "Build & Test"
+    needs: [ secret-scanning, sast, sca ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm install
+      - run: node -e "require('./src/app.js'); console.log('build OK')"

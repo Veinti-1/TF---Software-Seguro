@@ -56,4 +56,7 @@ jobs:
         with:
           node-version: '20'
       - run: npm install
-      - run: node -e "require('./src/app.js'); console.log('build OK')"
+      - name: Verificacion de build (sintaxis de todo el codigo fuente)
+        run: |
+          for f in $(find src poc -name '*.js'); do node --check "$f"; done
+          echo "build OK"
